@@ -3,7 +3,8 @@ import sqlite3
 import secrets
 
 
-from fastapi import FastAPI, Depends, HTTPException, Response, status
+from fastapi import FastAPI, Depends, HTTPException, Resquest, Response, status
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import bcrypt
 
@@ -48,6 +49,10 @@ def generate_cookie():
 
 
 app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/")
