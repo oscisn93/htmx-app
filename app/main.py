@@ -4,13 +4,14 @@ import secrets
 
 
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, status
+from fastapi.staticfiles  import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import bcrypt
 
 
-from config import get_db
+from config import get_db, settings, generate_cookie
 
 
 class User(BaseModel):
@@ -39,24 +40,21 @@ class Comment(BaseModel):
     content: str
 
 
-def generate_cookie():
-    token = secrets.token_urlsafe(16)
-    expiry = datetime.now() + timedelta(weeks=1)
-    return (token, expiry)
+
 
 
 app = FastAPI()
 
-
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="app/views")
 
 
 @app.get("/")
-def root(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT * FROM users;").fetchall()
-    print(rows)
-    return {"root": True}
+def landing_page(req: Request):
+    return templates.TemplateResponse(
+        request=req,
+        name="landing.html"
+    )
 
 
 @app.post("/auth/register/")
