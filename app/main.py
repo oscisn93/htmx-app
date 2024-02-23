@@ -3,7 +3,8 @@ import sqlite3
 import secrets
 
 
-from fastapi import FastAPI, Depends, HTTPException, Resquest, Response, status
+from fastapi import FastAPI, Depends, HTTPException, Request, Response, status
+from fastapi.staticfiles  import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import bcrypt
@@ -50,16 +51,17 @@ def generate_cookie():
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="app/views")
 
 
 @app.get("/")
-def root(db: sqlite3.Connection = Depends(get_db)):
-    rows = db.execute("SELECT * FROM users;").fetchall()
-    print(rows)
-    return {"root": True}
+def landing_page(req: Request):
+    return templates.TemplateResponse(
+        request=req,
+        name="landing.html"
+    )
 
 
 @app.post("/auth/register/")

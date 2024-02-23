@@ -1,21 +1,24 @@
 {% extends "layout.html" %}
 {% block title %}Welcome!{% endblock %}
 {% block content %}
-<div class="container text-center aligh-items-center p-56">
+<div class="py-8 container text-center">
+  <div class="w-full">
+    <img src="static/meme.png" alt="This should be a meme, wtf..." />
+  </div>
   <button 
       hx-get="/register-modal" 
       hx-target="#modals-here" 
       hx-trigger="click" 
       data-bs-toggle="modal" 
       data-bs-target="#modals-here"
-      class="btn btn-primary">Register</button>
+      class="mt-8 btn btn-primary">Register</button>
   <button 
       hx-get="/login-modal" 
       hx-target="#modals-here" 
       hx-trigger="click" 
       data-bs-toggle="modal" 
       data-bs-target="#modals-here"
-      class="btn btn-primary">Log In</button>
+      class="mt-8 btn btn-primary">Log In</button>
 
   <div id="modals-here"
       class="modal modal-blur fade"
