@@ -3,17 +3,14 @@ import sqlite3
 import secrets
 
 
-from fastapi import FastAPI, Depends, HTTPException, Resquest, Response, status
+from fastapi import FastAPI, Depends, HTTPException, Request, Response, status
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import bcrypt
 
 
 from config import get_db
-
-
-SALT_ROUNDS = 10
-PASSHASH_LENGTH = 15
 
 
 class User(BaseModel):
@@ -50,8 +47,8 @@ def generate_cookie():
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
@@ -66,8 +63,8 @@ def root(db: sqlite3.Connection = Depends(get_db)):
 def register_user(
     req: AuthRequest, res: Response, db: sqlite3.Connection = Depends(get_db)
 ):
-    salt = bcrypt.gensalt(SALT_ROUNDS)
-    hashed_pwd = bcrypt.kdf(req.password, salt, PASSHASH_LENGTH, SALT_ROUNDS)
+    salt = bcrypt.gensalt(settings.salt_rounds)
+    hashed_pwd = bcrypt.kdf(req.password, salt, settings.pass_length, settings.salt_rounds)
     token, expiry = generate_cookie()
 
     query = """
@@ -93,8 +90,10 @@ def login_user(
         FROM users WHERE username = ?;
     """
     row = db.execute(query, [req.username]).fetchall()[0]
+
     token = row["token"]
     expiry = row["expiry"]
+
     if not bcrypt.checkpw(req.password, row["passhash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -112,4 +111,6 @@ def login_user(
         db.execute(query, [token, expiry, row["id"]])
 
     res.set_cookie(key="session", value=token)
+
     return User(id=row.id, username=req.username, token=token, expiry=expiry)
+

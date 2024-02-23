@@ -22,3 +22,7 @@ And finally run the init script to start the application:
 
 ## Features
 
+
+## Resources
+
+[htmx examples](https://htmx.org/examples/)

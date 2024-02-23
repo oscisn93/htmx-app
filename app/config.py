@@ -7,6 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     database: str
+    pass_length: int
+    salt_rounds: int
     model_config = SettingsConfigDict(env_file=".env")
 
 
@@ -17,3 +19,4 @@ def get_db():
     with closing(sqlite3.connect(settings.database)) as db:
         db.row_factory = sqlite3.Row
         yield db
+
