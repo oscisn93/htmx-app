@@ -1,4 +1,6 @@
 from contextlib import closing
+from datetime import datetime, timedelta
+import secrets
 import sqlite3
 
 
@@ -20,3 +22,8 @@ def get_db():
         db.row_factory = sqlite3.Row
         yield db
 
+
+def generate_cookie():
+    token = secrets.token_urlsafe(16)
+    expiry = datetime.now() + timedelta(days=7)
+    return (token, expiry)

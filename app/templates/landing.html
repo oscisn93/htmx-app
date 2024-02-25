@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block title %}Welcome!{% endblock %}
+{% block content %}
+<div class="text-center">
+  <div class="my-4">
+    <img class="mx-auto" src="static/meme.png" alt="This should be a meme, wtf..." />
+  </div>
+  <button data-bs-toggle="modal" data-bs-target="#modal" class="btn btn-primary fw-bold">Get Started!</button>
+  <div id="modal" class="modal modal-blur fade" style="display: none" aria-hidden="false" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content text-start">
+        <form class="m-4 p-4" hx-post="/auth">
+          <h1>Enter your credentials:</h1>
+          <div class="form-group">
+            <label class="form-label mt-4" for="username">Username</label>
+            <input id="username" type="text" class="form-control" placeholder="Username" />
+          </div>
+          <div class="form-group">
+            <label class="form-label mt-4" for="password">Email</label>
+            <input id="password" type="password" class="form-control" placeholder="Email" />
+          </div>
+          <div class="text-center container-fluid">
+            <input hx-post="/register" type="submit" class="btn btn-primary mt-4" value="Register" />
+            <input hx-post="/login" type="submit" class="btn btn-success mt-4" value="Login" />
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
