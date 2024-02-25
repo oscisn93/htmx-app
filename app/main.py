@@ -66,7 +66,7 @@ def landing_page(req: Request):
 
 @app.post("/auth/register/")
 def register_user(
-    req: AuthRequest, res: Response, db: sqlite3.Connection = Depends(get_db)
+        req: AuthRequest, request: Request, res: Response, db: sqlite3.Connection = Depends(get_db)
 ):
     salt = bcrypt.gensalt(SALT_ROUNDS)
     hashed_pwd = bcrypt.kdf(req.password, salt, PASSHASH_LENGTH, SALT_ROUNDS)
@@ -78,12 +78,13 @@ def register_user(
     """
 
     try:
-        row = db.execute(query, [req.username, hashed_pwd, token, expiry])
+        db.execute(query, [req.username, hashed_pwd, token, expiry])
     except sqlite3.IntegrityError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=type(e))
 
     res.set_cookie(key="session", value=token)
-    return User(**row.fetchall()[0])
+
+    return templates.TemplateResponse(request=request, name="home.html", context={"username": req.username })
 
 
 @app.post("/auth/login/")
@@ -114,4 +115,6 @@ def login_user(
         db.execute(query, [token, expiry, row["id"]])
 
     res.set_cookie(key="session", value=token)
-    return User(id=row.id, username=req.username, token=token, expiry=expiry)
+
+    return templates.TemplateResponse(request=request, name="home.html", context={"username": req.username })
+
