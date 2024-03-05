@@ -1,16 +1,14 @@
-from datetime import datetime
 import sqlite3
 
 
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, status
-from fastapi.staticfiles  import StaticFiles
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import bcrypt
 
 
-from models import AuthRequest, User, Post, Comment
-from queries import create_user, login_user
-from config import get_db, settings, generate_cookie
+from models import AuthRequest
+from queries import InvalidPassword, create_user, verify_user
+from config import get_db
 
 
 app = FastAPI()
@@ -22,52 +20,58 @@ templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/")
 def landing_page(req: Request):
-    return templates.TemplateResponse(
-        request=req,
-        name="landing.html"
-    )
+    return templates.TemplateResponse(request=req, name="landing.html")
 
 
 @app.post("/auth/register/")
 def register_user(
-        req: Request, res: Response, auth: AuthRequest, db: sqlite3.Connection = Depends(get_db)
+    req: Request,
+    res: Response,
+    auth: AuthRequest,
+    db: sqlite3.Connection = Depends(get_db),
 ):
     session = create_user(auth, db)
+
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Username already exists"
+        )
+
     res.set_cookie(key="session", value=session.token)
 
-    return templates.TemplateResponse(request=req, name="home.html", context={"username": session.username })
+    return templates.TemplateResponse(
+        request=req, name="home.html", context={"username": session.user.username}
+    )
 
 
 @app.post("/auth/login/")
 def login_user(
-    req: AuthRequest, request: Request, res: Response, db: sqlite3.Connection = Depends(get_db)
+    req: AuthRequest,
+    request: Request,
+    res: Response,
+    db: sqlite3.Connection = Depends(get_db),
 ):
-    query = """
-        SELECT id, passhash, token, expiry
-        FROM users WHERE username = ?;
-    """
-    row = db.execute(query, [req.username]).fetchall()[0]
-
-    token = row["token"]
-    expiry = row["expiry"]
-
-    if not bcrypt.checkpw(req.password, row["passhash"]):
+    try:
+        userSession = verify_user(req.username, req.password, db)
+    except InvalidPassword:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials provided",
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password"
+        )
+    if userSession is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    if datetime.fromisoformat(expiry) > datetime.now():
-        token, expiry = generate_cookie()
-        query = """
-            UPDATE users
-            SET token = ?,
-                expiry = ?
-            WHERE id = ?;
-        """
-        db.execute(query, [token, expiry, row["id"]])
+    res.set_cookie(key="session", value=userSession.token)
 
-    res.set_cookie(key="session", value=token)
+    return templates.TemplateResponse(
+        request=request, name="home.html", context={"username": userSession.username}
+    )
 
-    return templates.TemplateResponse(request=request, name="home.html", context={"username": req.username })
 
+@app.get("/auth/logout/")
+def logout_user(req: Request, res: Response):
+    res.delete_cookie(key="session")
+    return templates.TemplateResponse(
+        name="landing.html", context={"request": req}
+    )
